@@ -9,16 +9,25 @@
         body, html {
             margin: 0;
             padding: 0;
-            overflow: auto;
+            overflow: auto; /* スクロールを可能にする */
             width: 100%;
             height: 100%;
+            position: relative; /* 相対位置を設定 */
         }
         canvas {
             transform: scaleX(-1);
-            width: 100%;
-            height: auto;
             display: block;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; /* キャンバスのz-indexを設定 */
+        }
+        .controls {
+            position: relative; /* 相対位置を設定 */
+            z-index: 2; /* UI要素のz-indexを設定 */
+            padding: 10px; /* パディングを追加して見やすくする */
+            background-color: rgba(255, 255, 255, 0.8); /* 背景色を追加して視認性を向上 */
+            border-radius: 5px; /* 角を丸くする */
         }
         video {
             display: none;
@@ -27,14 +36,43 @@
 </head>
 <body>
     <video id="input_video" autoplay playsinline></video>
-    <canvas id="output_canvas" width="640" height="480"></canvas>
-    <div class="radio-buttons">
+    <canvas id="output_canvas"></canvas>
+    <div class="controls">
         <input type="checkbox" id="l-brow" name="l-brow" checked /><label for="l-brow">左眉</label>
         <input type="checkbox" id="l-guide" name="l-guide" checked /><label for="l-guide">左眉ガイド</label>
+        <input type="checkbox" id="center" name="center" checked /><label for="center">中央線</label>
         <input type="checkbox" id="r-brow" name="r-brow" checked /><label for="r-brow">右眉</label>
         <input type="checkbox" id="r-guide" name="r-guide" checked /><label for="r-guide">右眉ガイド</label>
+        <br />
+        色の設定　眉
+        <select name="brow-color" id="brow-color">
+            <option value="red">赤</option>
+            <option value="black">黒</option>
+            <option value="white">白</option>
+            <option value="yellow" selected>黄</option>
+            <option value="green">緑</option>
+            <option value="blue">青</option>
+        </select>
+        &nbsp;中央線
+        <select name="line-color" id="line-color">
+            <option value="red" selected>赤</option>
+            <option value="black">黒</option>
+            <option value="white">白</option>
+            <option value="yellow">黄</option>
+            <option value="green">緑</option>
+            <option value="blue">青</option>
+        </select>
+        &nbsp;ガイド
+        <select name="guide-color" id="guide-color">
+            <option value="red">赤</option>
+            <option value="black">黒</option>
+            <option value="white">白</option>
+            <option value="yellow">黄</option>
+            <option value="green" selected>緑</option>
+            <option value="blue">青</option>
+        </select>
     </div>
-
+        
     <script>
         const R_EXEBROW = [ 70,  63, 105,  66, 107,  55,  65,  52,  53,  46];
         const L_EXEBROW = [336, 296, 334, 293, 300, 276, 283, 282, 295, 285];
@@ -43,8 +81,12 @@
         const canvasElement = document.getElementById('output_canvas');
         const elmBrowL = document.getElementById('l-brow');
         const elmGuideL = document.getElementById('l-guide');
+        const elmCenter = document.getElementById('center');
         const elmBrowR = document.getElementById('r-brow');
         const elmGuideR = document.getElementById('r-guide');
+        const elmBrowColor = document.getElementById('brow-color');
+        const elmLineColor = document.getElementById('line-color');
+        const elmGuideColor = document.getElementById('guide-color');
         const canvasCtx = canvasElement.getContext('2d');
 
         const faceMesh = new FaceMesh({
@@ -64,18 +106,23 @@
 
             if (results.multiFaceLandmarks) {
                 for (const landmarks of results.multiFaceLandmarks) {
+                    var hashi = Math.floor(landmarks[70].z * 100 + 100);
+                    var naka = Math.floor(landmarks[55].z * 100 + 100);
+                    console.log(hashi, naka);
                     if (elmBrowR.checked) {
-                        drawLandmarks(landmarks, "green", R_EXEBROW);  // 右眉毛のランドマーク
+                        drawLandmarks(landmarks, elmBrowColor.value, R_EXEBROW);  // 右眉毛のランドマーク
                     }
                     if (elmBrowL.checked) {
-                        drawLandmarks(landmarks, "green", L_EXEBROW);  // 左眉毛のランドマーク
+                        drawLandmarks(landmarks, elmBrowColor.value, L_EXEBROW);  // 左眉毛のランドマーク
                     }
-                    drawLandmarks(landmarks, "red", CENTER);                     // 中心線
+                    if (elmCenter.checked) {
+                        drawLandmarks(landmarks, elmLineColor.value, CENTER);                     // 中心線
+                    }
                     if (elmGuideR.checked) {
-                        drawReflectedLandmarks(landmarks, "yellow", R_EXEBROW, CENTER);
+                        drawReflectedLandmarks(landmarks, elmGuideColor.value, L_EXEBROW, CENTER);
                     }
                     if (elmGuideL.checked) {
-                        drawReflectedLandmarks(landmarks, "yellow", L_EXEBROW, CENTER);
+                        drawReflectedLandmarks(landmarks, elmGuideColor.value, R_EXEBROW, CENTER);
                     }
                 }
             }
@@ -136,6 +183,17 @@
         });
 
         camera.start();
+
+        // ウィンドウサイズ変更時にキャンバスサイズを更新
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = width * (480 / 640); // アスペクト比を維持
+            canvasElement.width = width;
+            canvasElement.height = height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // 初期サイズ設定
     </script>
 </body>
 </html>
