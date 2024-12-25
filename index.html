@@ -9,28 +9,27 @@
         body, html {
             margin: 0;
             padding: 0;
-            overflow: auto; /* スクロールを可能にする */
+            overflow: hidden; /* スクロールを非表示にする */
             width: 100%;
             height: 100%;
-            position: relative; /* 相対位置を設定 */
+            position: relative;
         }
-        canvas {
+        canvas, video {
             transform: scaleX(-1);
             display: block;
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1; /* キャンバスのz-indexを設定 */
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* アスペクト比を維持しながら要素をカバー */
         }
         .controls {
-            position: relative; /* 相対位置を設定 */
-            z-index: 2; /* UI要素のz-indexを設定 */
-            padding: 10px; /* パディングを追加して見やすくする */
-            background-color: rgba(255, 255, 255, 0.8); /* 背景色を追加して視認性を向上 */
-            border-radius: 5px; /* 角を丸くする */
-        }
-        video {
-            display: none;
+            position: relative;
+            z-index: 2;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -74,7 +73,7 @@
     </div>
         
     <script>
-        const R_EXEBROW = [ 70,  63, 105,  66, 107,  55,  65,  52,  53,  46];
+        const R_EXEBROW = [70, 63, 105, 66, 107, 55, 65, 52, 53, 46];
         const L_EXEBROW = [336, 296, 334, 293, 300, 276, 283, 282, 295, 285];
         const CENTER = [10, 1];
         const videoElement = document.getElementById('input_video');
@@ -106,17 +105,14 @@
 
             if (results.multiFaceLandmarks) {
                 for (const landmarks of results.multiFaceLandmarks) {
-                    var hashi = Math.floor(landmarks[70].z * 100 + 100);
-                    var naka = Math.floor(landmarks[55].z * 100 + 100);
-                    console.log(hashi, naka);
                     if (elmBrowR.checked) {
-                        drawLandmarks(landmarks, elmBrowColor.value, R_EXEBROW);  // 右眉毛のランドマーク
+                        drawLandmarks(landmarks, elmBrowColor.value, R_EXEBROW); // 右眉毛のランドマーク
                     }
                     if (elmBrowL.checked) {
-                        drawLandmarks(landmarks, elmBrowColor.value, L_EXEBROW);  // 左眉毛のランドマーク
+                        drawLandmarks(landmarks, elmBrowColor.value, L_EXEBROW); // 左眉毛のランドマーク
                     }
                     if (elmCenter.checked) {
-                        drawLandmarks(landmarks, elmLineColor.value, CENTER);                     // 中心線
+                        drawLandmarks(landmarks, elmLineColor.value, CENTER); // 中心線
                     }
                     if (elmGuideR.checked) {
                         drawReflectedLandmarks(landmarks, elmGuideColor.value, L_EXEBROW, CENTER);
@@ -146,22 +142,28 @@
         }
 
         function drawReflectedLandmarks(landmarks, color, indices, line) {
-            idx1 = line[0];
-            idx2 = line[1];
+            const idx1 = line[0];
+            const idx2 = line[1];
             const x1 = landmarks[idx1].x * canvasElement.width;
             const y1 = landmarks[idx1].y * canvasElement.height;
             const x2 = landmarks[idx2].x * canvasElement.width;
-            const y2 = landmarks[idx2].y * canvasElement.height; // 中心線を軸に反対側の眉毛を描画
+            const y2 = landmarks[idx2].y * canvasElement.height;
 
+            // 中心線を軸に反対側の眉毛を描画
             canvasCtx.beginPath();
             indices.forEach((index, i) => {
                 const originalX = landmarks[index].x * canvasElement.width;
-                const originalY = landmarks[index].y * canvasElement.height; // 直線の方程式 y = mx + b を使用して対称点を計算
+                const originalY = landmarks[index].y * canvasElement.height;
+
+                // 直線の方程式 y = mx + b を使用して対称点を計算
                 const m = (y2 - y1) / (x2 - x1);
-                const b = y1 - m * x1; // 対称点の計算
+                const b = y1 - m * x1;
+
+                // 対称点の計算
                 const d = (originalX + (originalY - b) * m) / (1 + m * m);
                 const x = 2 * d - originalX;
                 const y = 2 * d * m - originalY + 2 * b;
+
                 if (i === 0) {
                     canvasCtx.moveTo(x, y);
                 } else {
@@ -187,7 +189,7 @@
         // ウィンドウサイズ変更時にキャンバスサイズを更新
         function resizeCanvas() {
             const width = window.innerWidth;
-            const height = width * (480 / 640); // アスペクト比を維持
+            const height = window.innerHeight; // アスペクト比を維持
             canvasElement.width = width;
             canvasElement.height = height;
         }
