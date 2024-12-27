@@ -117,7 +117,7 @@
                         drawLandmarks(landmarks, elmBrowColor.value, R_EXEBROW); // 右眉毛のランドマーク
                     }
                     if (elmBrowL.checked) {
-                        drawLandmarks(landmarks, elmBrowColor.value, L_EXEBROW); // 左眉毛のランドマーク
+                        drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYEBROW, {color: '#FF3030'});
                     }
                     if (elmCenter.checked) {
                         drawLandmarks(landmarks, elmLineColor.value, CENTER); // 中心線
